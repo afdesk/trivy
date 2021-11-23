@@ -53,9 +53,65 @@ func extractKsplice(v string) string {
 	return ""
 }
 
+func isTrackedPackage(packName string) bool  {
+	m := map[string]bool {
+		"bind-export-libs": true,
+		"curl": true,
+		"dnf": true,
+		"dnf-data": true,
+		"dnf-plugins-core": true,
+		"file-libs": true,
+		"glib2": true,
+		"glibc": true,
+		"glibc-common": true,
+		"glibc-langpack-en": true,
+		"gnutls": true,
+		"json-c": true,
+		"libcurl": true,
+		"libdnf": true,
+		"libgcc": true,
+		"libgcrypt": true,
+		"libsepol": true,
+		"libsolv": true,
+		"libssh": true,
+		"libssh-config": true,
+		"libstdc++": true,
+		"lua-libs": true,
+		"ncurses": true,
+		"ncurses-base": true,
+		"ncurses-libs": true,
+		"nettle": true,
+		"openssh": true,
+		"openssh-clients": true,
+		"openssh-server": true,
+		"openssl-libs": true,
+		"pcre": true,
+		"platform-python": true,
+		"python3-dnf": true,
+		"python3-dnf-plugins-core": true,
+		"python3-hawkey": true,
+		"python3-libdnf": true,
+		"python3-libs": true,
+		"python3-pip-wheel": true,
+		"python3-rpm": true,
+		"rpm": true,
+		"rpm-build-libs": true,
+		"rpm-libs": true,
+		"sqlite-libs": true,
+		"vim-minimal": true,
+		"yum": true,
+		"yum-utils": true,
+	}
+	if _, ok := m[packName]; ok {
+		return true
+	}
+	return false
+}
+
 // Detect scans and return vulnerability in Oracle scanner
 func (s *Scanner) Detect(osVer string, pkgs []ftypes.Package) ([]types.DetectedVulnerability, error) {
 	log.Logger.Info("Detecting Oracle Linux vulnerabilities...")
+	basicVer := osVer
 
 	if strings.Count(osVer, ".") > 0 {
 		osVer = osVer[:strings.Index(osVer, ".")]
@@ -70,10 +126,21 @@ func (s *Scanner) Detect(osVer string, pkgs []ftypes.Package) ([]types.DetectedV
 		if err != nil {
 			return nil, xerrors.Errorf("failed to get Oracle Linux advisory: %w", err)
 		}
-
 		installed := utils.FormatVersion(pkg)
 		installedVersion := version.NewVersion(installed)
+
+		tracked := isTrackedPackage(pkg.Name)
+		if tracked && pkg.Name == "glibc"{
+			log.Logger.Debug("----------------------------------------------------------------------------------")
+			log.Logger.Debugf("[Tracking] OS version: %s. Package %q, installedVersion: %s-%s",
+				basicVer, pkg.Name, pkg.SrcVersion, pkg.SrcRelease)
+		}
+
 		for _, adv := range advisories {
+			if tracked && pkg.Name == "glibc" {
+				log.Logger.Debugf("[Tracking] %q, FixedVersion: %q", adv.VulnerabilityID, adv.FixedVersion)
+			}
+
 			// when one of them doesn't have ksplice, we'll also skip it
 			// extract kspliceX and compare it with kspliceY in advisories
 			// if kspliceX and kspliceY are different, we will skip the advisory
