@@ -190,15 +190,35 @@ func externalRef(bomLink string, bomRef string) (string, error) {
 	return fmt.Sprintf("%s/%d#%s", strings.Replace(bomLink, "uuid", "cdx", 1), cdx.BOMFileFormatJSON, bomRef), nil
 }
 
+func getDependencyHead(dependenciesById map[string][]string, mapIdToBom map[string]string) []string {
+	res := []string{}
+	dependent := map[string]bool{}
+	for _, v := range dependenciesById {
+		for _, id := range v {
+			dependent[id] = true
+		}
+	}
+	for id, bom := range mapIdToBom {
+		if !dependent[id] {
+			res = append(res, bom)
+		}
+	}
+	return res
+}
+
 func (e *Marshaler) marshalComponents(r types.Report, bomRef string) (*[]cdx.Component, *[]cdx.Dependency, *[]cdx.Vulnerability, error) {
 	var components []cdx.Component
 	var dependencies []cdx.Dependency
 	var metadataDependencies []string
 	libraryUniqMap := map[string]struct{}{}
 	vulnMap := map[string]cdx.Vulnerability{}
+
 	for _, result := range r.Results {
 		bomRefMap := map[string]string{}
-		var componentDependencies []string
+
+		mapPkgIdToBom := map[string]string{}
+		depsGraphByIDs := map[string][]string{}
+
 		for _, pkg := range result.Packages {
 			pkgComponent, err := pkgToCdxComponent(result.Type, r.Metadata, pkg)
 			if err != nil {
@@ -207,8 +227,11 @@ func (e *Marshaler) marshalComponents(r types.Report, bomRef string) (*[]cdx.Com
 			pkgID := packageID(result.Target, pkg.Name, utils.FormatVersion(pkg), pkg.FilePath)
 			if _, ok := bomRefMap[pkgID]; !ok {
 				bomRefMap[pkgID] = pkgComponent.BOMRef
-				componentDependencies = append(componentDependencies, pkgComponent.BOMRef)
 			}
+
+			// collect data for dependency tree
+			mapPkgIdToBom[pkg.ID] = pkgComponent.BOMRef
+			depsGraphByIDs[pkg.ID] = pkg.DependsOn
 
 			// When multiple lock files have the same dependency with the same name and version,
 			// "bom-ref" (PURL technically) of Library components may conflict.
@@ -226,11 +249,21 @@ func (e *Marshaler) marshalComponents(r types.Report, bomRef string) (*[]cdx.Com
 
 				// For components
 				// ref. https://cyclonedx.org/use-cases/#inventory
-				//
-				// TODO: All packages are flattened at the moment. We should construct dependency tree.
 				components = append(components, pkgComponent)
 			}
 		}
+		// constructs dependency tree
+		for pkgID, deps := range depsGraphByIDs {
+			bomDeps := []string{}
+			for _, dep := range deps {
+				bomDeps = append(bomDeps, mapPkgIdToBom[dep])
+			}
+			dependencies = append(dependencies, cdx.Dependency{
+				Ref:          mapPkgIdToBom[pkgID],
+				Dependencies: &bomDeps,
+			})
+		}
+		componentDependencies := getDependencyHead(depsGraphByIDs, mapPkgIdToBom)
 
 		for _, vuln := range result.Vulnerabilities {
 			// Take a bom-ref
@@ -290,6 +323,7 @@ func (e *Marshaler) marshalComponents(r types.Report, bomRef string) (*[]cdx.Com
 			// Dependency graph from #1 to #2
 			metadataDependencies = append(metadataDependencies, resultComponent.BOMRef)
 		}
+
 	}
 	vulns := maps.Values(vulnMap)
 	sort.Slice(vulns, func(i, j int) bool {
