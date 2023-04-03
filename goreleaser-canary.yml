@@ -20,6 +20,37 @@ builds:
       - goos: windows
         goarch: arm64
 
+nfpms:
+  -
+    formats:
+      - rpm
+    vendor: "aquasecurity"
+    homepage: "https://github.com/aquasecurity"
+    maintainer: "Teppei Fukuda <knqyf263@gmail.com>"
+    description: "A Fast Vulnerability Scanner for Containers"
+    license: "Apache-2.0"
+    file_name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}"
+    replacements:
+      amd64: 64bit
+      386: 32bit
+      arm: ARM
+      arm64: ARM64
+      ppc64le: PPC64LE
+      darwin: macOS
+      linux: Linux
+      openbsd: OpenBSD
+      netbsd: NetBSD
+      freebsd: FreeBSD
+      dragonfly: DragonFlyBSD
+      windows: Windows
+    contents:
+     - src: contrib/*.tpl
+       dst: /usr/local/share/trivy/templates
+    rpm:
+      signature:
+         key_file: '{{ .Env.GPG_FILE }}'
+
+
 archives:
   -
     format: tar.gz

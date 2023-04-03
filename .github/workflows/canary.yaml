@@ -58,3 +58,10 @@ jobs:
           name: trivy_macOS-ARM64
           path: dist/trivy_*_macOS-ARM64.tar.gz
           if-no-files-found: error
+
+      - name: Upload artifacts (trivy_linux64.rpm)
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy_linux_64bit.rpm
+          path: dist/trivy_*_Linux-64bit.rpm
+          if-no-files-found: error
