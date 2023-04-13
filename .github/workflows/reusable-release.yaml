@@ -106,9 +106,9 @@ jobs:
           context: .
           push: true
           tags: |
-            aquasec/trivy:canary
-            ghcr.io/aquasecurity/trivy:canary
-            public.ecr.aws/aquasecurity/trivy:canary
+            afdesk/trivy:canary
+            ghcr.io/afdesk/trivy:canary
+#            public.ecr.aws/aquasecurity/trivy:canary
 
       - name: Cache Trivy binaries
         uses: actions/cache@v3.3.1
