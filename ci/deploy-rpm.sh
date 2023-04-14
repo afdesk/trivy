@@ -9,7 +9,7 @@ function create_rpm_repo () {
         mkdir -p $rpm_path
         cp ../dist/*64bit.rpm ${rpm_path}/
 
-        createrepo_c -u "https://github.com/aquasecurity/trivy/releases/download/v"$TRIVY_VERSION --update $rpm_path
+        createrepo_c -u "https://github.com/afdesk/trivy/releases/download/v"$TRIVY_VERSION --update $rpm_path
 
         rm ${rpm_path}/*64bit.rpm
 }
@@ -18,7 +18,7 @@ echo "Create RPM releases for Trivy v$TRIVY_VERSION"
 
 cd trivy-repo
 
-VERSIONS=(5 6 7 8 9)
+VERSIONS=(2 5 6 7 8 9)
 for version in ${VERSIONS[@]}; do
         echo "Processing RHEL/CentOS $version..."
         create_rpm_repo $version
