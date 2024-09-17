@@ -63,6 +63,7 @@ jobs:
       - name: Update version in file
         run: |
           echo "appVersion: $TAG"
+          sed -i "s/version: [0-9]\+\.[0-9]\+\.[0-9]\+/version: $TAG/" helm/trivy/Chart.yaml
           sed -i "s/appVersion: [0-9]\+\.[0-9]\+\.[0-9]\+/appVersion: $TAG/" helm/trivy/Chart.yaml
       - name: Create a PR
         run: ./misc/helm-chart/create-pr.sh ${{ env.TAG }}
