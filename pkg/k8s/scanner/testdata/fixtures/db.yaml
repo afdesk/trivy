@@ -1,0 +1,20 @@
+- bucket: k8s::Official Kubernetes CVE Feed
+  pairs:
+    - bucket: k8s.io/kubelet
+      pairs:
+        - key: CVE-2023-3676
+          value:
+            PatchedVersions: :["1.28.1","1.27.5","1.26.8","1.25.13","1.24.17"]
+            VulnerableVersions:
+              - ">=1.28.0, <1.28.1"
+              - ">=1.27.0, <1.27.5"
+              - ">=1.26.0, <1.26.8"
+              - ">=1.25.0, <1.25.13"
+              - ">=1.24.0, <1.24.17"
+- bucket: vulnerability
+  pairs:
+    - key: CVE-2023-367
+      value:
+        Title: "kubernetes: Insufficient input sanitization"
+        Description: k8s vulnerability
+        Severity: HIGH
