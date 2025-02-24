@@ -2,6 +2,10 @@ package scanner
 
 import (
 	"context"
+	"github.com/aquasecurity/trivy-db/pkg/db"
+	"github.com/aquasecurity/trivy/internal/dbtest"
+	"github.com/aquasecurity/trivy/pkg/k8s/report"
+	"github.com/aquasecurity/trivy/pkg/types"
 	"sort"
 	"testing"
 
@@ -18,6 +22,71 @@ import (
 	"github.com/aquasecurity/trivy/pkg/sbom/core"
 	"github.com/aquasecurity/trivy/pkg/uuid"
 )
+
+func TestScanK8sVulns(t *testing.T) {
+	tests := []struct {
+		name          string
+		flagOpts      flag.Options
+		fixtures      []string
+		clusterName   string
+		artifacts     []*artifacts.Artifact
+		wantResources []report.Resource
+	}{
+		{
+			name: "NodeComponent vulnerability scan scan without images",
+			flagOpts: flag.Options{
+				GlobalOptions: flag.GlobalOptions{CacheDir: ""},
+				DBOptions:     flag.DBOptions{SkipDBUpdate: true},
+				ScanOptions: flag.ScanOptions{
+					Scanners: types.Scanners{types.VulnerabilityScanner},
+				},
+			},
+			fixtures:    []string{"testdata/fixtures/db.yaml"},
+			clusterName: "test-cluster",
+			artifacts: []*artifacts.Artifact{
+				{
+					Kind: "NodeComponents",
+					Name: "kind-control-plane",
+					RawResource: map[string]any{
+						"ContainerRuntimeVersion": "containerd://1.6.7",
+						"Hostname":                "kind-control-plane",
+						"KubeProxyVersion":        "6.2.13-300.fc38.aarch64",
+						"KubeletVersion":          "v1.25.0",
+						"NodeName":                "kind-control-plane",
+						"OsImage":                 "Ubuntu 21.04",
+						"Properties": map[string]string{
+							"Architecture":    "arm64",
+							"HostName":        "kind-control-plane",
+							"KernelVersion":   "6.2.15-300.fc38.aarch64",
+							"NodeRole":        "master",
+							"OperatingSystem": "linux",
+						},
+					},
+				},
+			},
+			wantResources: []report.Resource{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cacheDir := dbtest.InitDB(t, test.fixtures)
+			defer db.Close()
+
+			ctx := context.Background()
+
+			test.flagOpts.GlobalOptions.CacheDir = cacheDir
+
+			runner, err := cmd.NewRunner(ctx, test.flagOpts)
+			require.NoError(t, err)
+
+			scanner := NewScanner(test.clusterName, runner, test.flagOpts)
+			resources, err := scanner.scanK8sVulns(ctx, test.artifacts)
+			require.NoError(t, err)
+			assert.Contains(t, resources, test.wantResources)
+		})
+	}
+}
 
 func TestScanner_Scan(t *testing.T) {
 	flagOpts := flag.Options{ReportOptions: flag.ReportOptions{Format: "cyclonedx"}}
