@@ -12,14 +12,6 @@ on:
         required: false
         type: string
     secrets:
-      DOCKERHUB_USER:
-        required: true
-      DOCKERHUB_TOKEN:
-        required: true
-      ECR_ACCESS_KEY_ID:
-        required: true
-      ECR_SECRET_ACCESS_KEY:
-        required: true
       GPG_KEY:
         required: true
       ORG_REPO_TOKEN:
