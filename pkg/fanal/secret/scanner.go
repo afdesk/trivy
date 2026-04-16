@@ -28,6 +28,39 @@ var (
 	})
 )
 
+// Default skip lists used when not overridden in the secret config file.
+var (
+	DefaultSkipDirs = []string{
+		".git",
+		"node_modules",
+	}
+	DefaultSkipFiles = []string{
+		"go.mod",
+		"go.sum",
+		"package-lock.json",
+		"yarn.lock",
+		"pnpm-lock.yaml",
+		"Pipfile.lock",
+		"Gemfile.lock",
+	}
+	DefaultSkipExts = []string{
+		".jpg",
+		".png",
+		".gif",
+		".doc",
+		".pdf",
+		".bin",
+		".svg",
+		".socket",
+		".deb",
+		".rpm",
+		".zip",
+		".gz",
+		".gzip",
+		".tar",
+	}
+)
+
 const (
 	// DefaultBufferSize is the default chunk size for streaming secret scanning
 	// 64KB provides a good balance between memory usage and I/O efficiency
@@ -63,12 +96,27 @@ type Config struct {
 	CustomRules      []Rule       `yaml:"rules"`
 	CustomAllowRules AllowRules   `yaml:"allow-rules"`
 	ExcludeBlock     ExcludeBlock `yaml:"exclude-block"`
+
+	// SkipDirs is a list of directory names to skip during secret scanning.
+	// If not set, DefaultSkipDirs is used.
+	SkipDirs []string `yaml:"skip-dirs"`
+
+	// SkipFiles is a list of file names to skip during secret scanning.
+	// If not set, DefaultSkipFiles is used.
+	SkipFiles []string `yaml:"skip-files"`
+
+	// SkipExts is a list of file extensions to skip during secret scanning.
+	// If not set, DefaultSkipExts is used.
+	SkipExts []string `yaml:"skip-exts"`
 }
 
 type Global struct {
 	Rules        []Rule
 	AllowRules   AllowRules
 	ExcludeBlock ExcludeBlock
+	SkipDirs     []string
+	SkipFiles    []string
+	SkipExts     []string
 }
 
 // Allow checks if the match is allowed
@@ -79,6 +127,21 @@ func (g Global) Allow(match string) bool {
 // AllowPath checks if the path is allowed
 func (g Global) AllowPath(path string) bool {
 	return g.AllowRules.AllowPath(path)
+}
+
+// ContainsSkipDir reports whether name matches any of the configured skip directories.
+func (g Global) ContainsSkipDir(name string) bool {
+	return slices.Contains(g.SkipDirs, name)
+}
+
+// IsSkipFile reports whether name matches any of the configured skip file names.
+func (g Global) IsSkipFile(name string) bool {
+	return slices.Contains(g.SkipFiles, name)
+}
+
+// IsSkipExt reports whether ext matches any of the configured skip extensions.
+func (g Global) IsSkipExt(ext string) bool {
+	return slices.Contains(g.SkipExts, ext)
 }
 
 // Regexp adds unmarshalling from YAML for regexp.Regexp
@@ -400,6 +463,9 @@ func NewScanner(config *Config, opts ...Option) Scanner {
 		scanner.Global = &Global{
 			Rules:      builtinRules,
 			AllowRules: builtinAllowRules,
+			SkipDirs:   DefaultSkipDirs,
+			SkipFiles:  DefaultSkipFiles,
+			SkipExts:   DefaultSkipExts,
 		}
 		return scanner
 	}
@@ -429,10 +495,26 @@ func NewScanner(config *Config, opts ...Option) Scanner {
 	// Pre-compute lowercase keywords for all rules
 	precomputeLowercaseKeywords(rules)
 
+	skipDirs := config.SkipDirs
+	if len(skipDirs) == 0 {
+		skipDirs = DefaultSkipDirs
+	}
+	skipFiles := config.SkipFiles
+	if len(skipFiles) == 0 {
+		skipFiles = DefaultSkipFiles
+	}
+	skipExts := config.SkipExts
+	if len(skipExts) == 0 {
+		skipExts = DefaultSkipExts
+	}
+
 	scanner.Global = &Global{
 		Rules:        rules,
 		AllowRules:   allowRules,
 		ExcludeBlock: config.ExcludeBlock,
+		SkipDirs:     skipDirs,
+		SkipFiles:    skipFiles,
+		SkipExts:     skipExts,
 	}
 
 	return scanner

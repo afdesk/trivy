@@ -24,41 +24,9 @@ var _ analyzer.Initializer = &SecretAnalyzer{}
 
 const version = 1
 
-var (
-	skipFiles = []string{
-		"go.mod",
-		"go.sum",
-		"package-lock.json",
-		"yarn.lock",
-		"pnpm-lock.yaml",
-		"Pipfile.lock",
-		"Gemfile.lock",
-	}
-	skipDirs = []string{
-		".git",
-		"node_modules",
-	}
-	skipExts = []string{
-		".jpg",
-		".png",
-		".gif",
-		".doc",
-		".pdf",
-		".bin",
-		".svg",
-		".socket",
-		".deb",
-		".rpm",
-		".zip",
-		".gz",
-		".gzip",
-		".tar",
-	}
-
-	allowedBinaries = []string{
-		".pyc",
-	}
-)
+var allowedBinaries = []string{
+	".pyc",
+}
 
 func init() {
 	// The scanner will be initialized later via InitScanner()
@@ -153,14 +121,14 @@ func (a *SecretAnalyzer) Required(filePath string, fi os.FileInfo) bool {
 	dirs := strings.Split(dir, "/")
 
 	// Check if the directory should be skipped
-	for _, skipDir := range skipDirs {
-		if slices.Contains(dirs, skipDir) {
+	for _, d := range dirs {
+		if a.scanner.ContainsSkipDir(d) {
 			return false
 		}
 	}
 
 	// Check if the file should be skipped
-	if slices.Contains(skipFiles, fileName) {
+	if a.scanner.IsSkipFile(fileName) {
 		return false
 	}
 
@@ -171,7 +139,7 @@ func (a *SecretAnalyzer) Required(filePath string, fi os.FileInfo) bool {
 
 	// Check if the file extension should be skipped
 	ext := filepath.Ext(fileName)
-	if slices.Contains(skipExts, ext) {
+	if a.scanner.IsSkipExt(ext) {
 		return false
 	}
 
