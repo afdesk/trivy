@@ -231,6 +231,35 @@ disable-allow-rules:
   - markdown
 ```
 
+### Skip Dirs, Files and Extensions
+By default, Trivy skips the following directories, files, and extensions during secret scanning:
+
+| Option | Defaults |
+|--------|----------|
+| `skip-dirs` | `.git`, `node_modules` |
+| `skip-files` | `go.mod`, `go.sum`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Pipfile.lock`, `Gemfile.lock` |
+| `skip-exts` | `.jpg`, `.png`, `.gif`, `.doc`, `.pdf`, `.bin`, `.svg`, `.socket`, `.deb`, `.rpm`, `.zip`, `.gz`, `.gzip`, `.tar` |
+
+You can override these lists in the configuration file.
+
+!!! warning
+    When any of these options is specified, it **replaces** the corresponding default list entirely — defaults are not merged.
+    If you want to keep the defaults and add new entries, you must include them explicitly.
+
+``` yaml
+skip-dirs:
+  - vendor
+  - testdata
+skip-files:
+  - custom.lock
+  - secrets.json
+skip-exts:
+  - .xyz
+  - .dat
+```
+
+In the example above, the default skip dirs (`.git`, `node_modules`) will **no longer** be skipped; only `vendor` and `testdata` will be.
+
 ## Recommendation
 We would recommend specifying `--skip-dirs` for faster secret scanning.
 In container image scanning, Trivy walks the file tree rooted at `/` and scans all the files other than [built-in allowed paths][builtin-allow].
