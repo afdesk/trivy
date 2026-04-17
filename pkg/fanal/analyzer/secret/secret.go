@@ -121,10 +121,8 @@ func (a *SecretAnalyzer) Required(filePath string, fi os.FileInfo) bool {
 	dirs := strings.Split(dir, "/")
 
 	// Check if the directory should be skipped
-	for _, d := range dirs {
-		if a.scanner.ContainsSkipDir(d) {
-			return false
-		}
+	if slices.ContainsFunc(dirs, a.scanner.ContainsSkipDir) {
+		return false
 	}
 
 	// Check if the file should be skipped
