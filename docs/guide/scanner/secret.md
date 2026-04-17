@@ -260,6 +260,16 @@ skip-exts:
 
 In the example above, the default skip dirs (`.git`, `node_modules`) will **no longer** be skipped; only `vendor` and `testdata` will be.
 
+To disable all skipping for a particular category, set it to an empty list:
+
+``` yaml
+skip-dirs: []
+skip-files: []
+skip-exts: []
+```
+
+This will cause Trivy to scan every directory, file, and extension without any exclusions.
+
 ## Recommendation
 We would recommend specifying `--skip-dirs` for faster secret scanning.
 In container image scanning, Trivy walks the file tree rooted at `/` and scans all the files other than [built-in allowed paths][builtin-allow].

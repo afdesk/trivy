@@ -98,16 +98,19 @@ type Config struct {
 	ExcludeBlock     ExcludeBlock `yaml:"exclude-block"`
 
 	// SkipDirs is a list of directory names to skip during secret scanning.
-	// If not set, DefaultSkipDirs is used.
-	SkipDirs []string `yaml:"skip-dirs"`
+	// If nil (not set in config), DefaultSkipDirs is used.
+	// Set to an empty list to disable all directory skipping.
+	SkipDirs *[]string `yaml:"skip-dirs"`
 
 	// SkipFiles is a list of file names to skip during secret scanning.
-	// If not set, DefaultSkipFiles is used.
-	SkipFiles []string `yaml:"skip-files"`
+	// If nil (not set in config), DefaultSkipFiles is used.
+	// Set to an empty list to disable all file skipping.
+	SkipFiles *[]string `yaml:"skip-files"`
 
 	// SkipExts is a list of file extensions to skip during secret scanning.
-	// If not set, DefaultSkipExts is used.
-	SkipExts []string `yaml:"skip-exts"`
+	// If nil (not set in config), DefaultSkipExts is used.
+	// Set to an empty list to disable all extension skipping.
+	SkipExts *[]string `yaml:"skip-exts"`
 }
 
 type Global struct {
@@ -495,17 +498,17 @@ func NewScanner(config *Config, opts ...Option) Scanner {
 	// Pre-compute lowercase keywords for all rules
 	precomputeLowercaseKeywords(rules)
 
-	skipDirs := config.SkipDirs
-	if len(skipDirs) == 0 {
-		skipDirs = DefaultSkipDirs
+	skipDirs := DefaultSkipDirs
+	if config.SkipDirs != nil {
+		skipDirs = *config.SkipDirs
 	}
-	skipFiles := config.SkipFiles
-	if len(skipFiles) == 0 {
-		skipFiles = DefaultSkipFiles
+	skipFiles := DefaultSkipFiles
+	if config.SkipFiles != nil {
+		skipFiles = *config.SkipFiles
 	}
-	skipExts := config.SkipExts
-	if len(skipExts) == 0 {
-		skipExts = DefaultSkipExts
+	skipExts := DefaultSkipExts
+	if config.SkipExts != nil {
+		skipExts = *config.SkipExts
 	}
 
 	scanner.Global = &Global{

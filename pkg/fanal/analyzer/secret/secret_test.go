@@ -317,3 +317,47 @@ func TestSecretRequireCustomSkips(t *testing.T) {
 		})
 	}
 }
+
+func TestSecretRequireEmptySkips(t *testing.T) {
+	// When skip lists are explicitly set to empty in the config, nothing should be skipped —
+	// even files/dirs/extensions that are in the default skip lists.
+	tests := []struct {
+		name     string
+		filePath string
+		want     bool
+	}{
+		{
+			name:     "default skip dir (node_modules) is no longer skipped",
+			filePath: "testdata/node_modules/secret.txt",
+			want:     true,
+		},
+		{
+			name:     "default skip file (package-lock.json) is no longer skipped",
+			filePath: "testdata/package-lock.json",
+			want:     true,
+		},
+		{
+			name:     "default skip extension (.doc) is no longer skipped",
+			filePath: "testdata/secret.doc",
+			want:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := secret.SecretAnalyzer{}
+			err := a.Init(analyzer.AnalyzerOptions{
+				SecretScannerOption: analyzer.SecretScannerOption{
+					ConfigPath: "testdata/empty-skip-config.yaml",
+				},
+			})
+			require.NoError(t, err)
+
+			fi, err := os.Stat(tt.filePath)
+			require.NoError(t, err)
+
+			got := a.Required(tt.filePath, fi)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
